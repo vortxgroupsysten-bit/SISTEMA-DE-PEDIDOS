@@ -3,199 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Garçom Pro</title>
+    <title>Garçom App</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-color: #121212; --card-bg: #1e1e1e; --sidebar-bg: #181818;
-            --primary: #ff9f43; --accent: #ff6b6b; --text-light: #f1f1f1;
-            --text-dim: #a5a5a5; --success: #1dd1a1;
-        }
+        :root { --bg: #121212; --card: #1e1e1e; --primary: #ff9f43; --text: #f1f1f1; --success: #1dd1a1; }
         * { box-sizing: border-box; outline: none; }
-        body {
-            font-family: 'Poppins', sans-serif; margin: 0; background-color: var(--bg-color);
-            color: var(--text-light); display: flex; height: 100vh; overflow: hidden;
-        }
+        body { font-family: 'Poppins', sans-serif; margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; }
 
-        /* --- NOTIFICAÇÃO (TOAST) --- */
-        #notification-container {
-            position: fixed; top: 20px; right: 20px; z-index: 1000;
-            display: flex; flex-direction: column; gap: 10px;
-        }
-        .toast {
-            background: #252525; border-left: 5px solid var(--success);
-            color: white; padding: 15px 20px; border-radius: 4px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5); min-width: 280px;
-            animation: slideInRight 0.5s ease forwards; display: flex; align-items: center; justify-content: space-between;
-        }
-        .toast-content strong { display: block; color: var(--success); font-size: 1.1rem; }
-        .toast-content small { color: #ccc; }
-        .toast-close { background: none; border: none; color: #777; cursor: pointer; font-size: 1.2rem; }
+        /* HEADER & TABS */
+        .app-header { padding: 15px; background: #202020; text-align: center; font-weight: bold; border-bottom: 1px solid #333; }
+        .view-container { flex: 1; overflow: hidden; position: relative; }
+        .view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; padding: 20px; display: none; background: var(--bg); }
+        .view.active { display: block; }
+
+        /* PEDIDO ESTILOS */
+        .category-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .cat-btn { flex: 1; padding: 10px; background: var(--card); border: 1px solid #333; color: #aaa; border-radius: 8px; cursor: pointer; }
+        .cat-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        .product-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; padding-bottom: 80px; }
+        .product-card { background: var(--card); padding: 15px; border-radius: 10px; border: 1px solid #333; display: flex; flex-direction: column; justify-content: space-between; height: 140px; }
+        .btn-add { background: #333; color: white; border: none; padding: 8px; width: 100%; border-radius: 5px; margin-top: auto; }
+        
+        /* BOTTOM BAR DO CARRINHO */
+        .cart-bar { position: fixed; bottom: 60px; left: 0; width: 100%; background: #252525; padding: 15px; border-top: 1px solid var(--primary); display: flex; justify-content: space-between; align-items: center; z-index: 10; transform: translateY(100%); transition: 0.3s; }
+        .cart-bar.show { transform: translateY(0); }
 
-        /* --- LAYOUT PADRÃO (Mantido) --- */
-        .menu-area { flex: 2; padding: 20px; overflow-y: auto; }
-        .category-tabs { display: flex; gap: 15px; margin-bottom: 25px; position: sticky; top: 0; z-index: 10; background: var(--bg-color); padding: 10px 0; }
-        .tab-btn { background: var(--card-bg); border: 1px solid #333; color: var(--text-dim); padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: 600; flex: 1; text-transform: uppercase; }
-        .tab-btn.active, .tab-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .section-title { font-size: 1.2rem; margin-bottom: 15px; color: var(--text-dim); border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 40px; }
-        .product-card { background: var(--card-bg); border-radius: 10px; padding: 20px; border: 1px solid #333; display: flex; flex-direction: column; justify-content: space-between; height: 160px; position: relative; overflow: hidden; }
-        .product-card::before { content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 4px; background: var(--primary); }
-        .product-card:hover { transform: translateY(-3px); background: #252525; border-color: var(--primary); }
-        .product-info h3 { margin: 0 0 10px 0; font-size: 1.1rem; font-weight: 600; color: #fff; }
-        .product-price { font-size: 1.4rem; color: var(--primary); font-weight: bold; }
-        .btn-add { width: 100%; padding: 10px; background: #333; border: none; color: #fff; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: auto; }
-        .btn-add:hover { background: var(--primary); color: white; }
-        .sidebar { flex: 1; max-width: 380px; background: var(--sidebar-bg); display: flex; flex-direction: column; border-left: 1px solid #333; }
-        .sidebar-header { padding: 25px; background: #202020; border-bottom: 1px solid #333; }
-        .input-group label { display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px; letter-spacing: 1px; }
-        .input-modern { width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; color: white; font-family: inherit; margin-bottom: 15px; }
-        .cart-area { flex: 1; overflow-y: auto; padding: 20px; }
-        .cart-item { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 2px solid var(--text-dim); }
-        .qty-controls { display: flex; align-items: center; gap: 10px; background: #151515; padding: 4px; border-radius: 20px; }
-        .qty-btn { width: 24px; height: 24px; border-radius: 50%; border: none; background: #333; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .footer-total { padding: 25px; background: #202020; border-top: 1px solid #333; }
-        .total-row { display: flex; justify-content: space-between; font-size: 1.4rem; font-weight: bold; margin-bottom: 15px; }
-        .btn-confirm { width: 100%; padding: 15px; background: var(--success); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        @media (max-width: 900px) { body { flex-direction: column; overflow: auto; } .sidebar { max-width: 100%; border-left: none; border-top: 2px solid var(--primary); } .menu-area { overflow: visible; } #notification-container { right: 0; width: 100%; padding: 10px; } }
+        /* ABA MESAS/PAGAMENTO */
+        .search-bar { width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid #444; border-radius: 8px; color: white; margin-bottom: 20px; font-size: 1rem; }
+        .table-card { background: var(--card); padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 5px solid var(--success); display: flex; justify-content: space-between; align-items: center; }
+        .btn-pay-table { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
+        /* NAVIGATION FOOTER */
+        .nav-footer { height: 60px; background: #181818; border-top: 1px solid #333; display: flex; position: fixed; bottom: 0; width: 100%; z-index: 20; }
+        .nav-item { flex: 1; background: none; border: none; color: #777; font-size: 0.8rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .nav-item span { font-size: 1.2rem; margin-bottom: 2px; }
+        .nav-item.active { color: var(--primary); }
+
+        /* MODAL DE PAGAMENTO (REUTILIZAVEL) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 50; justify-content: center; align-items: center; }
+        .modal-content { background: #222; width: 90%; max-width: 400px; padding: 20px; border-radius: 10px; border: 1px solid #444; }
+        
+        /* Notificações */
+        #notification-area { position: fixed; top: 10px; right: 10px; z-index: 100; }
+        .toast { background: #333; border-left: 4px solid var(--success); padding: 15px; margin-bottom: 10px; border-radius: 4px; animation: slideIn 0.3s; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
 <body>
-    <div id="notification-container"></div>
 
-    <div class="menu-area">
-        <div class="category-tabs">
-            <button class="tab-btn active" onclick="scrollToId('food-section')">Comidas</button>
-            <button class="tab-btn" onclick="scrollToId('drink-section')">Bebidas</button>
+    <div id="notification-area"></div>
+
+    <div class="view-container">
+        <div id="view-order" class="view active">
+            <div class="app-header">Novo Pedido</div>
+            
+            <div style="padding: 15px 0;">
+                <input type="text" id="waiter-name" class="search-bar" placeholder="Seu Nome (Obrigatório)" style="margin-bottom: 10px;">
+                <input type="number" id="table-num" class="search-bar" placeholder="Número da Mesa">
+            </div>
+
+            <div class="category-tabs">
+                <button class="cat-btn active" onclick="filterCat('food')">🍔 Comida</button>
+                <button class="cat-btn" onclick="filterCat('drink')">🥤 Bebida</button>
+            </div>
+
+            <div id="products-container" class="product-list"></div>
         </div>
-        <div id="food-section">
-            <h2 class="section-title">Pratos & Lanches</h2>
-            <div class="menu-grid" id="food-container"></div>
-        </div>
-        <div id="drink-section">
-            <h2 class="section-title">Bebidas</h2>
-            <div class="menu-grid" id="drink-container"></div>
+
+        <div id="view-bills" class="view">
+            <div class="app-header">Gerenciar Mesas</div>
+            <div style="margin-top: 15px;">
+                <input type="text" id="search-table" class="search-bar" placeholder="🔍 Pesquisar mesa..." onkeyup="renderActiveTables()">
+            </div>
+            <div id="active-tables-list">
+                </div>
         </div>
     </div>
 
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <div class="input-group">
-                <label>GARÇOM</label>
-                <input type="text" id="waiter-name" class="input-modern" placeholder="Nome...">
-            </div>
-            <div class="input-group" style="margin-bottom:0;">
-                <label>MESA</label>
-                <input type="number" id="table-num" class="input-modern" placeholder="Nº" style="margin-bottom:0;">
-            </div>
+    <div class="cart-bar" id="cart-bar">
+        <div>
+            <div style="font-size: 0.8rem; color: #ccc;">Total do Pedido</div>
+            <div style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">R$ <span id="cart-total">0.00</span></div>
         </div>
-        <div class="cart-area" id="cart-list">
-            <div style="text-align:center; color:var(--text-dim); margin-top:40px;"><p>Carrinho Vazio</p></div>
-        </div>
-        <div class="footer-total">
-            <div class="total-row"><span>Total</span><span>R$ <span id="total-price">0.00</span></span></div>
-            <button class="btn-confirm" onclick="sendOrder()">Confirmar</button>
-        </div>
+        <button onclick="sendOrder()" style="background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold;">ENVIAR</button>
+    </div>
+
+    <div class="nav-footer">
+        <button class="nav-item active" onclick="switchView('order')">
+            <span>📝</span> Pedido
+        </button>
+        <button class="nav-item" onclick="switchView('bills')">
+            <span>💸</span> Mesas/Pgto
+        </button>
     </div>
 
     <script>
+        // DADOS
         const products = [
-            { id: 1, name: "X-Burger Artesanal", price: 25.00, type: "food" },
-            { id: 2, name: "Batata Frita Suprema", price: 15.00, type: "food" },
-            { id: 3, name: "Pizza Mozzarella", price: 32.00, type: "food" },
-            { id: 4, name: "Frango a Passarinho", price: 35.00, type: "food" },
-            { id: 5, name: "Coca-Cola Lata", price: 6.00, type: "drink" },
-            { id: 6, name: "Suco de Laranja", price: 8.00, type: "drink" },
-            { id: 7, name: "Água Mineral", price: 4.00, type: "drink" },
-            { id: 8, name: "Cerveja Long Neck", price: 12.00, type: "drink" }
+            { id: 1, name: "X-Burger", price: 25.00, type: "food" },
+            { id: 2, name: "Fritas", price: 15.00, type: "food" },
+            { id: 3, name: "Pizza", price: 32.00, type: "food" },
+            { id: 4, name: "Coca-Cola", price: 6.00, type: "drink" },
+            { id: 5, name: "Suco", price: 8.00, type: "drink" },
+            { id: 6, name: "Cerveja", price: 12.00, type: "drink" }
         ];
         let cart = [];
 
+        // INICIALIZAÇÃO
         window.onload = () => {
-            products.forEach(p => {
-                const card = `
-                    <div class="product-card">
-                        <div class="product-info"><h3>${p.name}</h3><div class="product-price">R$ ${p.price.toFixed(2)}</div></div>
-                        <button class="btn-add" onclick="addToCart(${p.id})">ADICIONAR</button>
-                    </div>`;
-                document.getElementById(p.type === 'food' ? 'food-container' : 'drink-container').innerHTML += card;
-            });
-            // Inicia verificação de notificações
+            renderProducts('food');
             setInterval(checkNotifications, 3000);
+            // Salvar nome do garçom para não digitar toda hora
+            if(localStorage.getItem('savedWaiter')) {
+                document.getElementById('waiter-name').value = localStorage.getItem('savedWaiter');
+            }
         };
+
+        // --- NAVEGAÇÃO ---
+        function switchView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            // Ativa o botão correto (logica simples baseada na ordem)
+            const btnIndex = viewName === 'order' ? 0 : 1;
+            document.querySelectorAll('.nav-item')[btnIndex].classList.add('active');
+
+            if(viewName === 'bills') renderActiveTables();
+        }
+
+        // --- ABA 1: PEDIDOS ---
+        function filterCat(type) {
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            renderProducts(type);
+        }
+
+        function renderProducts(type) {
+            const container = document.getElementById('products-container');
+            container.innerHTML = '';
+            products.filter(p => p.type === type).forEach(p => {
+                container.innerHTML += `
+                    <div class="product-card">
+                        <div>
+                            <strong>${p.name}</strong><br>
+                            <span style="color:var(--primary)">R$ ${p.price.toFixed(2)}</span>
+                        </div>
+                        <button class="btn-add" onclick="addToCart(${p.id})">Adicionar</button>
+                    </div>`;
+            });
+        }
 
         function addToCart(id) {
             const item = products.find(p => p.id === id);
-            const existing = cart.find(i => i.id === id);
-            existing ? existing.qty++ : cart.push({ ...item, qty: 1 });
+            cart.push(item);
             updateCartUI();
         }
-        function changeQty(id, delta) {
-            const item = cart.find(i => i.id === id);
-            item.qty += delta;
-            if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
-            updateCartUI();
-        }
+
         function updateCartUI() {
-            const list = document.getElementById('cart-list'); list.innerHTML = ''; let total = 0;
-            if (cart.length === 0) list.innerHTML = '<div style="text-align:center; color:var(--text-dim); margin-top:40px;"><p>Carrinho Vazio</p></div>';
-            else cart.forEach(i => { total += i.price * i.qty; list.innerHTML += `<div class="cart-item"><div style="flex:1;"><strong style="display:block;">${i.name}</strong><small style="color:var(--text-dim)">R$ ${i.price.toFixed(2)}</small></div><div class="qty-controls"><button class="qty-btn" onclick="changeQty(${i.id}, -1)">-</button><span style="font-weight:bold; font-size:0.9rem;">${i.qty}</span><button class="qty-btn" onclick="changeQty(${i.id}, 1)">+</button></div></div>`; });
-            document.getElementById('total-price').innerText = total.toFixed(2);
-        }
-        function sendOrder() {
-            const waiter = document.getElementById('waiter-name').value.trim();
-            const table = document.getElementById('table-num').value;
-            if (!waiter || !table || cart.length === 0) return alert("⚠️ Preencha Garçom, Mesa e Itens!");
+            const total = cart.reduce((acc, i) => acc + i.price, 0);
+            document.getElementById('cart-total').innerText = total.toFixed(2);
             
-            const order = { id: Date.now(), table, waiter, items: cart, total: document.getElementById('total-price').innerText, time: new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) };
-            const currentOrders = JSON.parse(localStorage.getItem('restaurantOrders')) || [];
-            currentOrders.push(order);
-            localStorage.setItem('restaurantOrders', JSON.stringify(currentOrders));
-
-            const btn = document.querySelector('.btn-confirm'); btn.innerText = "ENVIADO! ✅"; btn.style.background = "#1abc9c";
-            setTimeout(() => { cart = []; updateCartUI(); document.getElementById('table-num').value = ''; btn.innerText = "CONFIRMAR"; btn.style.background = "var(--success)"; }, 1500);
+            const bar = document.getElementById('cart-bar');
+            if(cart.length > 0) bar.classList.add('show');
+            else bar.classList.remove('show');
         }
-        function scrollToId(id) { document.getElementById(id).scrollIntoView({ behavior: 'smooth' }); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); event.target.classList.add('active'); }
 
-        // --- SISTEMA DE NOTIFICAÇÃO ---
-        function checkNotifications() {
-            const notifications = JSON.parse(localStorage.getItem('restaurantNotifications')) || [];
-            if (notifications.length > 0) {
-                // Toca som (URL de um som curto)
-                const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-                audio.play().catch(e => console.log("Audio play blocked by browser policy"));
+        function sendOrder() {
+            const waiter = document.getElementById('waiter-name').value;
+            const table = document.getElementById('table-num').value;
 
-                notifications.forEach(notif => {
-                    showToast(notif.msg, notif.waiter);
-                });
-                
-                // Limpa notificações para não repetir
-                localStorage.setItem('restaurantNotifications', '[]');
+            if(!waiter || !table) return alert("Preencha Garçom e Mesa!");
+            
+            // Salva nome para proxima vez
+            localStorage.setItem('savedWaiter', waiter);
+
+            // Agrupar itens iguais
+            const groupedItems = [];
+            cart.forEach(item => {
+                const existing = groupedItems.find(i => i.id === item.id);
+                if(existing) existing.qty++;
+                else groupedItems.push({...item, qty: 1});
+            });
+
+            const order = {
+                id: Date.now(),
+                table, waiter,
+                items: groupedItems,
+                time: new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})
+            };
+
+            const orders = JSON.parse(localStorage.getItem('restaurantOrders')) || [];
+            orders.push(order);
+            localStorage.setItem('restaurantOrders', JSON.stringify(orders));
+
+            cart = [];
+            updateCartUI();
+            alert("Pedido Enviado!");
+        }
+
+        // --- ABA 2: MESAS ATIVAS ---
+        function renderActiveTables() {
+            const container = document.getElementById('active-tables-list');
+            const search = document.getElementById('search-table').value;
+            const tabs = JSON.parse(localStorage.getItem('restaurantTabs')) || {};
+            const tables = Object.keys(tabs);
+
+            container.innerHTML = '';
+            
+            if(tables.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#777; margin-top:30px;">Nenhuma mesa ativa.</p>';
+                return;
             }
+
+            tables.forEach(t => {
+                if(search && !t.includes(search)) return; // Filtro de busca
+
+                const total = tabs[t].reduce((acc, i) => acc + (i.price * i.qty), 0);
+                
+                container.innerHTML += `
+                    <div class="table-card">
+                        <div>
+                            <div style="font-size:1.2rem; font-weight:bold;">Mesa ${t}</div>
+                            <div style="color:#aaa;">Total: R$ ${total.toFixed(2)}</div>
+                        </div>
+                        <button class="btn-pay-table" onclick="payTable('${t}')">Receber / Fechar</button>
+                    </div>`;
+            });
         }
 
-        function showToast(message, waiterName) {
-            const container = document.getElementById('notification-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `
-                <div class="toast-content">
-                    <strong>🔔 PEDIDO PRONTO!</strong>
-                    <span>${message}</span><br>
-                    <small>Atenção: ${waiterName}</small>
-                </div>
-                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
-            `;
-            container.appendChild(toast);
+        function payTable(tableNum) {
+            if(!confirm(`Confirmar recebimento da Mesa ${tableNum}?`)) return;
 
-            // Remove automaticamente após 7 segundos
-            setTimeout(() => {
-                toast.style.animation = 'fadeOut 0.5s forwards';
-                setTimeout(() => toast.remove(), 500);
-            }, 7000);
+            const tabs = JSON.parse(localStorage.getItem('restaurantTabs'));
+            const items = tabs[tableNum];
+            const history = JSON.parse(localStorage.getItem('restaurantSalesHistory')) || [];
+
+            // 1. Salvar no histórico Financeiro (Mesma logica do painel)
+            items.forEach(item => {
+                history.push({
+                    waiter: item.waiter || 'App',
+                    amount: item.price * item.qty,
+                    item: item.name,
+                    time: new Date().toLocaleTimeString()
+                });
+            });
+            localStorage.setItem('restaurantSalesHistory', JSON.stringify(history));
+
+            // 2. Apagar conta
+            delete tabs[tableNum];
+            localStorage.setItem('restaurantTabs', JSON.stringify(tabs));
+
+            renderActiveTables();
+            alert("Pagamento confirmado!");
+        }
+
+        // --- NOTIFICAÇÕES ---
+        function checkNotifications() {
+            const notifs = JSON.parse(localStorage.getItem('restaurantNotifications')) || [];
+            if(notifs.length > 0) {
+                // Filtra notificações apenas para o garçom atual (opcional, aqui mostra todas)
+                notifs.forEach(n => {
+                    const div = document.createElement('div');
+                    div.className = 'toast';
+                    div.innerHTML = `<strong>🔔 Cozinha:</strong> ${n.msg}<br><small>Para: ${n.waiter}</small>`;
+                    document.getElementById('notification-area').appendChild(div);
+                    setTimeout(() => div.remove(), 5000);
+                });
+                localStorage.setItem('restaurantNotifications', '[]'); // Limpa
+                
+                // Toca som
+                new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(()=>{});
+            }
         }
     </script>
 </body>
