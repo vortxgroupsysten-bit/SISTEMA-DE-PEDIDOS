@@ -3,74 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App do Garçom</title>
+    <title>Garçom Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #ff6b6b; --dark: #333; --light: #f4f4f4; }
-        body { font-family: sans-serif; margin: 0; background-color: var(--light); display: flex; height: 100vh; }
-        
-        .main-content { flex: 2; padding: 20px; overflow-y: auto; }
-        .sidebar { flex: 1; background: white; padding: 20px; box-shadow: -2px 0 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --sidebar-bg: #181818;
+            --primary: #ff9f43;
+            --accent: #ff6b6b;
+            --text-light: #f1f1f1;
+            --text-dim: #a5a5a5;
+            --success: #1dd1a1;
+        }
 
-        h2 { border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
-        .item-card { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
-        .item-card img { width: 100%; height: 100px; object-fit: cover; border-radius: 4px; background: #ddd; }
-        .price { color: var(--primary); font-weight: bold; margin: 10px 0; }
-        .add-btn { background: var(--dark); color: white; border: none; padding: 8px; width: 100%; cursor: pointer; border-radius: 4px;}
-        .add-btn:hover { background: var(--primary); }
+        * { box-sizing: border-box; outline: none; }
 
-        /* Inputs do Pedido */
-        .order-inputs input { width: 100%; padding: 12px; margin-bottom: 10px; font-size: 16px; border: 2px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        .order-inputs input:focus { border-color: var(--primary); outline: none; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Esquerda: Cardápio --- */
+        .menu-area {
+            flex: 2;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--bg-color);
+            padding: 10px 0;
+        }
+
+        .tab-btn {
+            background: var(--card-bg);
+            border: 1px solid #333;
+            color: var(--text-dim);
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+            flex: 1; /* Botões ocupam largura igual */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tab-btn.active, .tab-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(255, 159, 67, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--text-dim);
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        /* CARD SEM IMAGEM */
+        .product-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            transition: 0.2s;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 160px; /* Altura fixa para uniformidade */
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Detalhe colorido na lateral para estilo */
+        .product-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--primary);
+        }
+
+        .product-card:hover {
+            transform: translateY(-3px);
+            background: #252525;
+            border-color: var(--primary);
+        }
+
+        .product-info h3 { 
+            margin: 0 0 10px 0; 
+            font-size: 1.1rem; 
+            font-weight: 600;
+            color: #fff;
+        }
         
-        .cart-items { flex: 1; overflow-y: auto; margin-bottom: 15px; border-top: 1px solid #eee; padding-top: 10px; }
-        .cart-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 8px 0; font-size: 0.9em; }
-        .cart-controls button { width: 25px; height: 25px; cursor: pointer; border: 1px solid #ccc; background: #fff; }
+        .product-price { 
+            font-size: 1.4rem; 
+            color: var(--primary); 
+            font-weight: bold; 
+        }
+
+        .btn-add {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            border: none;
+            color: #fff;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: auto; /* Empurra o botão para baixo */
+        }
+
+        .btn-add:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* --- Direita: Sidebar --- */
+        .sidebar {
+            flex: 1;
+            max-width: 380px;
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #333;
+        }
+
+        .sidebar-header {
+            padding: 25px;
+            background: #202020;
+            border-bottom: 1px solid #333;
+        }
+
+        .input-group label { display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px; letter-spacing: 1px; }
+        .input-modern {
+            width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid #444;
+            border-radius: 6px; color: white; font-family: inherit; margin-bottom: 15px;
+        }
+        .input-modern:focus { border-color: var(--primary); }
+
+        .cart-area { flex: 1; overflow-y: auto; padding: 20px; }
+
+        .cart-item {
+            background: #252525;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 2px solid var(--text-dim);
+        }
         
-        .confirm-btn { background: #28a745; color: white; border: none; padding: 15px; width: 100%; font-size: 18px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .qty-controls {
+            display: flex; align-items: center; gap: 10px; background: #151515; padding: 4px; border-radius: 20px;
+        }
+        .qty-btn {
+            width: 24px; height: 24px; border-radius: 50%; border: none; background: #333; color: white; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .qty-btn:hover { background: var(--primary); }
+
+        .footer-total { padding: 25px; background: #202020; border-top: 1px solid #333; }
+        .total-row { display: flex; justify-content: space-between; font-size: 1.4rem; font-weight: bold; margin-bottom: 15px; }
         
-        @media (max-width: 768px) {
-            body { flex-direction: column; }
-            .sidebar { height: 50vh; order: 2; }
-            .main-content { height: 50vh; order: 1; }
+        .btn-confirm {
+            width: 100%; padding: 15px; background: var(--success); color: white; border: none; border-radius: 8px;
+            font-size: 1rem; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-confirm:hover { filter: brightness(1.1); }
+
+        @media (max-width: 900px) {
+            body { flex-direction: column; overflow: auto; }
+            .sidebar { max-width: 100%; border-left: none; border-top: 2px solid var(--primary); }
+            .menu-area { overflow: visible; }
         }
     </style>
 </head>
 <body>
 
-    <div class="main-content">
-        <h2>🍔 Comidas</h2>
-        <div class="menu-grid" id="food-container"></div>
+    <div class="menu-area">
+        <div class="category-tabs">
+            <button class="tab-btn active" onclick="scrollToId('food-section')">Comidas</button>
+            <button class="tab-btn" onclick="scrollToId('drink-section')">Bebidas</button>
+        </div>
 
-        <h2 style="margin-top: 30px;">🥤 Bebidas</h2>
-        <div class="menu-grid" id="drink-container"></div>
+        <div id="food-section">
+            <h2 class="section-title">Pratos & Lanches</h2>
+            <div class="menu-grid" id="food-container"></div>
+        </div>
+
+        <div id="drink-section">
+            <h2 class="section-title">Bebidas</h2>
+            <div class="menu-grid" id="drink-container"></div>
+        </div>
     </div>
 
     <div class="sidebar">
-        <div class="order-inputs">
-            <h3>Novo Pedido</h3>
-            <input type="text" id="waiter-name" placeholder="Nome do Garçom (Obrigatório)">
-            <input type="number" id="table-num" placeholder="Número da Mesa" min="1">
+        <div class="sidebar-header">
+            <div class="input-group">
+                <label>GARÇOM</label>
+                <input type="text" id="waiter-name" class="input-modern" placeholder="Nome...">
+            </div>
+            <div class="input-group" style="margin-bottom:0;">
+                <label>MESA</label>
+                <input type="number" id="table-num" class="input-modern" placeholder="Nº" style="margin-bottom:0;">
+            </div>
         </div>
 
-        <div class="cart-items" id="cart-list">
-            <p style="text-align:center; color:#888;">Carrinho vazio</p>
+        <div class="cart-area" id="cart-list">
+            <div style="text-align:center; color:var(--text-dim); margin-top:40px;">
+                <p>Carrinho Vazio</p>
+            </div>
         </div>
 
-        <div style="text-align: right; margin-bottom: 10px; font-weight: bold; font-size: 1.2em;">
-            Total: R$ <span id="total-price">0.00</span>
+        <div class="footer-total">
+            <div class="total-row">
+                <span>Total</span>
+                <span>R$ <span id="total-price">0.00</span></span>
+            </div>
+            <button class="btn-confirm" onclick="sendOrder()">Confirmar</button>
         </div>
-        <button class="confirm-btn" onclick="sendOrder()">ENVIAR PARA COZINHA</button>
     </div>
 
     <script>
+        // Dados SEM imagens
         const products = [
-            { id: 1, name: "X-Burger", price: 25.00, type: "food", img: "https://via.placeholder.com/150?text=Burger" },
-            { id: 2, name: "Batata Frita", price: 15.00, type: "food", img: "https://via.placeholder.com/150?text=Fritas" },
-            { id: 3, name: "Pizza Fatia", price: 12.00, type: "food", img: "https://via.placeholder.com/150?text=Pizza" },
-            { id: 4, name: "Coca-Cola", price: 6.00, type: "drink", img: "https://via.placeholder.com/150?text=Cola" },
-            { id: 5, name: "Suco Natural", price: 8.00, type: "drink", img: "https://via.placeholder.com/150?text=Suco" },
-            { id: 6, name: "Água", price: 4.00, type: "drink", img: "https://via.placeholder.com/150?text=Agua" }
+            { id: 1, name: "X-Burger Artesanal", price: 25.00, type: "food" },
+            { id: 2, name: "Batata Frita Suprema", price: 15.00, type: "food" },
+            { id: 3, name: "Pizza Mozzarella", price: 32.00, type: "food" },
+            { id: 4, name: "Frango a Passarinho", price: 35.00, type: "food" },
+            { id: 5, name: "Coca-Cola Lata", price: 6.00, type: "drink" },
+            { id: 6, name: "Suco de Laranja", price: 8.00, type: "drink" },
+            { id: 7, name: "Água Mineral", price: 4.00, type: "drink" },
+            { id: 8, name: "Cerveja Long Neck", price: 12.00, type: "drink" }
         ];
 
         let cart = [];
@@ -78,60 +271,78 @@
         window.onload = () => {
             products.forEach(p => {
                 const card = `
-                    <div class="item-card">
-                        <img src="${p.img}">
-                        <h4>${p.name}</h4>
-                        <div class="price">R$ ${p.price.toFixed(2)}</div>
-                        <button class="add-btn" onclick="addToCart(${p.id})">Adicionar</button>
+                    <div class="product-card">
+                        <div class="product-info">
+                            <h3>${p.name}</h3>
+                            <div class="product-price">R$ ${p.price.toFixed(2)}</div>
+                        </div>
+                        <button class="btn-add" onclick="addToCart(${p.id})">ADICIONAR</button>
                     </div>`;
-                document.getElementById(p.type === 'food' ? 'food-container' : 'drink-container').innerHTML += card;
+                
+                const container = p.type === 'food' ? 'food-container' : 'drink-container';
+                document.getElementById(container).innerHTML += card;
             });
         };
+
+        function scrollToId(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
 
         function addToCart(id) {
             const item = products.find(p => p.id === id);
             const existing = cart.find(i => i.id === id);
             existing ? existing.qty++ : cart.push({ ...item, qty: 1 });
-            renderCart();
+            updateCartUI();
         }
 
         function changeQty(id, delta) {
             const item = cart.find(i => i.id === id);
             item.qty += delta;
             if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
-            renderCart();
+            updateCartUI();
         }
 
-        function renderCart() {
+        function updateCartUI() {
             const list = document.getElementById('cart-list');
             list.innerHTML = '';
             let total = 0;
-            cart.forEach(i => {
-                total += i.price * i.qty;
-                list.innerHTML += `
-                    <div class="cart-item">
-                        <div>${i.name}<br><small>R$ ${i.price.toFixed(2)}</small></div>
-                        <div class="cart-controls">
-                            <button onclick="changeQty(${i.id}, -1)">-</button> <span>${i.qty}</span> <button onclick="changeQty(${i.id}, 1)">+</button>
-                        </div>
-                    </div>`;
-            });
+
+            if (cart.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:var(--text-dim); margin-top:40px;"><p>Carrinho Vazio</p></div>';
+            } else {
+                cart.forEach(i => {
+                    total += i.price * i.qty;
+                    list.innerHTML += `
+                        <div class="cart-item">
+                            <div style="flex:1;">
+                                <strong style="display:block; margin-bottom:2px;">${i.name}</strong>
+                                <small style="color:var(--text-dim)">R$ ${i.price.toFixed(2)}</small>
+                            </div>
+                            <div class="qty-controls">
+                                <button class="qty-btn" onclick="changeQty(${i.id}, -1)">-</button>
+                                <span style="font-weight:bold; font-size:0.9rem;">${i.qty}</span>
+                                <button class="qty-btn" onclick="changeQty(${i.id}, 1)">+</button>
+                            </div>
+                        </div>`;
+                });
+            }
             document.getElementById('total-price').innerText = total.toFixed(2);
-            if(cart.length === 0) list.innerHTML = '<p style="text-align:center; color:#888;">Carrinho vazio</p>';
         }
 
         function sendOrder() {
             const waiter = document.getElementById('waiter-name').value.trim();
             const table = document.getElementById('table-num').value;
             
-            if (!waiter) return alert("Digite o NOME DO GARÇOM!");
-            if (!table) return alert("Digite o NÚMERO DA MESA!");
-            if (cart.length === 0) return alert("Adicione itens ao pedido!");
+            if (!waiter) return alert("⚠️ Digite o nome do garçom!");
+            if (!table) return alert("⚠️ Digite o número da mesa!");
+            if (cart.length === 0) return alert("⚠️ O carrinho está vazio!");
 
             const order = {
                 id: Date.now(),
                 table: table,
-                waiter: waiter, // Enviando o nome do garçom
+                waiter: waiter,
                 items: cart,
                 total: document.getElementById('total-price').innerText,
                 time: new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})
@@ -141,11 +352,17 @@
             currentOrders.push(order);
             localStorage.setItem('restaurantOrders', JSON.stringify(currentOrders));
 
-            cart = [];
-            document.getElementById('table-num').value = '';
-            // Não limpamos o nome do garçom para facilitar o próximo pedido dele
-            renderCart();
-            alert(`Pedido enviado! (Garçom: ${waiter})`);
+            const btn = document.querySelector('.btn-confirm');
+            btn.innerText = "ENVIADO! ✅";
+            btn.style.background = "#1abc9c";
+            
+            setTimeout(() => {
+                cart = [];
+                updateCartUI();
+                document.getElementById('table-num').value = '';
+                btn.innerText = "CONFIRMAR";
+                btn.style.background = "var(--success)";
+            }, 1500);
         }
     </script>
 </body>
