@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel Gestão</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #222; color: #fff; margin: 0; display: flex; height: 100vh; }
+        .sidebar { width: 220px; background: #151515; padding: 20px; border-right: 1px solid #333; }
+        .sidebar button { width: 100%; padding: 15px; margin-bottom: 10px; background: #333; color: #ccc; border: none; cursor: pointer; text-align: left; border-radius: 5px; font-size: 16px; }
+        .sidebar button.active { background: #ff6b6b; color: white; font-weight: bold; }
+        
+        .content { flex: 1; padding: 30px; overflow-y: auto; }
+        .hidden { display: none; }
+        
+        /* Cozinha */
+        .orders-container { display: flex; flex-wrap: wrap; gap: 20px; }
+        .order-card { background: #fff; color: #000; width: 280px; padding: 15px; border-radius: 8px; border-top: 5px solid #ff6b6b; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .order-meta { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-bottom: 10px; }
+        .waiter-badge { background: #333; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; display: inline-block; margin-bottom: 10px; }
+        .btn-deliver { width: 100%; background: #28a745; color: white; padding: 10px; border: none; cursor: pointer; margin-top: 10px; border-radius: 4px; font-weight: bold; }
+
+        /* Mesas */
+        .table-row { background: #333; padding: 15px; margin-bottom: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #4cd137; }
+        .btn-details { background: #00a8ff; color: white; padding: 8px 15px; border: none; cursor: pointer; border-radius: 4px; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; }
+        .modal-content { background: white; color: black; padding: 25px; width: 450px; border-radius: 8px; max-height: 80vh; overflow-y: auto; }
+        .bill-item { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0; font-size: 0.95em; }
+        .waiter-tag { font-size: 0.75em; color: #666; font-style: italic; margin-left: 5px; }
+        .bill-total { font-size: 1.6em; text-align: right; margin-top: 20px; font-weight: bold; color: #222; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2 style="color:white; text-align:center;">Gestão</h2>
+        <button onclick="nav('kitchen')" id="btn-kitchen" class="active">👨‍🍳 Cozinha (Pedidos)</button>
+        <button onclick="nav('tables')" id="btn-tables">💰 Mesas (Contas)</button>
+    </div>
+
+    <div class="content">
+        <div id="view-kitchen">
+            <h1>Pedidos na Fila</h1>
+            <div id="kitchen-list" class="orders-container"></div>
+        </div>
+
+        <div id="view-tables" class="hidden">
+            <h1>Contas Abertas</h1>
+            <div id="tables-list"></div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Mesa</h2>
+            <div id="modal-items"></div>
+            <div class="bill-total">Total: R$ <span id="modal-total">0.00</span></div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button onclick="closeBill()" style="flex:1; padding:12px; background:#e84118; color:white; border:none; cursor:pointer; border-radius:4px; font-weight:bold;">💸 Fechar Conta</button>
+                <button onclick="closeModal()" style="flex:1; padding:12px; background:#ccc; border:none; cursor:pointer; border-radius:4px;">Voltar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- NAVEGAÇÃO ---
+        function nav(view) {
+            document.querySelectorAll('.content > div').forEach(d => d.classList.add('hidden'));
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${view}`).classList.add('active');
+            
+            if(view === 'kitchen') loadKitchen();
+            if(view === 'tables') loadTables();
+        }
+
+        // --- COZINHA ---
+        function loadKitchen() {
+            const list = document.getElementById('kitchen-list');
+            const orders = JSON.parse(localStorage.getItem('restaurantOrders')) || [];
+            
+            list.innerHTML = orders.length ? '' : '<p style="color:#777">Nenhum pedido pendente.</p>';
+
+            orders.forEach((order, idx) => {
+                const itemsList = order.items.map(i => `<li>${i.qty}x ${i.name}</li>`).join('');
+                list.innerHTML += `
+                    <div class="order-card">
+                        <div class="order-meta">
+                            <span>Mesa ${order.table}</span>
+                            <span>${order.time}</span>
+                        </div>
+                        <div class="waiter-badge">Garçom: ${order.waiter}</div>
+                        <ul>${itemsList}</ul>
+                        <button class="btn-deliver" onclick="deliverOrder(${idx})">✅ Entregar</button>
+                    </div>`;
+            });
+        }
+
+        function deliverOrder(idx) {
+            let orders = JSON.parse(localStorage.getItem('restaurantOrders'));
+            let order = orders[idx];
+
+            // 1. Prepara os itens para salvar na conta (Adiciona o nome do garçom em CADA item)
+            // Isso permite saber quem pediu o que no histórico final
+            const itemsWithWaiter = order.items.map(item => ({
+                ...item,
+                waiter: order.waiter // Carimba o item com o nome do garçom
+            }));
+
+            // 2. Salva na conta da Mesa
+            let tabs = JSON.parse(localStorage.getItem('restaurantTabs')) || {};
+            if (!tabs[order.table]) tabs[order.table] = []; // Cria conta se não existir
+            
+            // AQUI ACONTECE A SOMA: O push adiciona novos itens ao array existente da mesa
+            tabs[order.table].push(...itemsWithWaiter); 
+
+            localStorage.setItem('restaurantTabs', JSON.stringify(tabs));
+
+            // 3. Remove da cozinha
+            orders.splice(idx, 1);
+            localStorage.setItem('restaurantOrders', JSON.stringify(orders));
+            
+            loadKitchen();
+        }
+
+        // --- MESAS / CAIXA ---
+        function loadTables() {
+            const list = document.getElementById('tables-list');
+            const tabs = JSON.parse(localStorage.getItem('restaurantTabs')) || {};
+            const tables = Object.keys(tabs).sort((a,b) => a - b); // Ordena mesas
+
+            list.innerHTML = tables.length ? '' : '<p>Nenhuma conta aberta.</p>';
+
+            tables.forEach(t => {
+                const total = tabs[t].reduce((acc, i) => acc + (i.price * i.qty), 0);
+                list.innerHTML += `
+                    <div class="table-row">
+                        <div>
+                            <h2>Mesa ${t}</h2>
+                            <span style="color:#ccc">${tabs[t].length} itens lançados</span>
+                        </div>
+                        <div style="text-align:right">
+                            <div style="font-size:1.4em; font-weight:bold; color:#4cd137;">R$ ${total.toFixed(2)}</div>
+                            <button class="btn-details" onclick="openBill('${t}')">Ver Conta</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        let currentTable = null;
+
+        function openBill(table) {
+            currentTable = table;
+            const tabs = JSON.parse(localStorage.getItem('restaurantTabs'));
+            const items = tabs[table];
+            const modalList = document.getElementById('modal-items');
+            
+            let total = 0;
+            modalList.innerHTML = '';
+
+            // Lista item por item (não agrupamos para mostrar o garçom de cada pedido específico)
+            items.forEach(i => {
+                total += i.price * i.qty;
+                modalList.innerHTML += `
+                    <div class="bill-item">
+                        <div>
+                            <strong>${i.qty}x ${i.name}</strong>
+                            <span class="waiter-tag">(Garçom: ${i.waiter})</span>
+                        </div>
+                        <div>R$ ${(i.price * i.qty).toFixed(2)}</div>
+                    </div>`;
+            });
+
+            document.getElementById('modal-title').innerText = `Conta Mesa ${table}`;
+            document.getElementById('modal-total').innerText = total.toFixed(2);
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeBill() {
+            if(confirm(`Confirmar pagamento da Mesa ${currentTable}?`)) {
+                let tabs = JSON.parse(localStorage.getItem('restaurantTabs'));
+                delete tabs[currentTable]; // Apaga a conta
+                localStorage.setItem('restaurantTabs', JSON.stringify(tabs));
+                closeModal();
+                loadTables();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // Atualização automática da cozinha
+        setInterval(() => {
+            if(!document.getElementById('view-kitchen').classList.contains('hidden')) loadKitchen();
+        }, 4000);
+
+        loadKitchen();
+    </script>
+</body>
+</html>
